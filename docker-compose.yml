@@ -1,0 +1,36 @@
+services:
+  # Servicio 1: La Base de Datos PostgreSQL
+  postgres-db:
+    image: postgres:15
+    container_name: csl_postgres_container
+    environment:
+      POSTGRES_DB: logistics_db
+      POSTGRES_USER: csolara      # <--- USUARIO ACTUALIZADO
+      POSTGRES_PASSWORD: cowabunga # <--- CONTRASEÑA ACTUALIZADA
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
+    restart: always
+
+  # Servicio 2: Tu API Spring Boot
+  api-app:
+    build: .
+    container_name: csl_api_container
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres-db
+    environment:
+      # Conexión a la base de datos (debe coincidir con lo de arriba)
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-db:5432/logistics_db
+      SPRING_DATASOURCE_USERNAME: csolara      # <--- USUARIO ACTUALIZADO
+      SPRING_DATASOURCE_PASSWORD: cowabunga    # <--- CONTRASEÑA ACTUALIZADA
+      
+      # Configuración de JPA
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: "true"
+    restart: always
+
+volumes:
+  postgres_data:

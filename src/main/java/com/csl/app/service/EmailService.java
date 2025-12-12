@@ -58,4 +58,25 @@ public class EmailService {
         mailSender.send(message);
         System.out.println("✅ Correo confirmación enviado a: " + destino);
     }
+
+    public void enviarPresupuesto(String destino, String transporte, String peso, String precio) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        
+        message.setFrom("controlsystemlogistic@gmail.com");
+        message.setTo(destino);
+        message.setSubject("Presupuesto Oficial - CSL Logistics");
+        
+        String cuerpo = "Hola,\n\n" +
+                "Aquí tienes el detalle de tu presupuesto solicitado:\n\n" +
+                "📦 Transporte: " + transporte + "\n" +
+                "⚖️ Peso: " + peso + " kg\n" +
+                "💰 PRECIO ESTIMADO: " + precio + "\n\n" +
+                "Este presupuesto tiene una validez de 15 días.\n" +
+                "Para confirmar el envío, inicia sesión en tu cuenta y crea un nuevo pedido.\n\n" +
+                "Atentamente,\nEquipo Comercial de CSL.";
+        
+        message.setText(cuerpo);
+        mailSender.send(message);
+        System.out.println("✅ Presupuesto enviado a: " + destino);
+    }
 }

@@ -33,7 +33,7 @@ public class EmailService {
         
         message.setText(cuerpo);
         mailSender.send(message);
-        System.out.println("✅ Correo recuperación enviado a: " + destino);
+        System.out.println("Correo recuperación enviado a: " + destino);
     }
 
     // --- NUEVO: CORREO DE CONFIRMACIÓN DE REGISTRO ---
@@ -56,7 +56,7 @@ public class EmailService {
 
         message.setText(cuerpo);
         mailSender.send(message);
-        System.out.println("✅ Correo confirmación enviado a: " + destino);
+        System.out.println("Correo confirmación enviado a: " + destino);
     }
 
     public void enviarPresupuesto(String destino, String transporte, String peso, String precio) {
@@ -77,6 +77,6 @@ public class EmailService {
         
         message.setText(cuerpo);
         mailSender.send(message);
-        System.out.println("✅ Presupuesto enviado a: " + destino);
+        System.out.println("Presupuesto enviado a: " + destino);
     }
 }

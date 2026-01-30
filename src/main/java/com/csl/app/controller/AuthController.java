@@ -112,7 +112,7 @@ public class AuthController {
             registrationTokens.remove(token);
 
             // Redirigir al Login del Frontend (Ajusta el puerto 5500 si es necesario)
-            response.sendRedirect("https://www.controlsystemlogistic.com/login.html?verified=true");
+            response.sendRedirect("https://controlsystemlogistic.com/login.html?verified=true");
         } else {
             response.sendError(HttpStatus.NOT_FOUND.value(), "Usuario no encontrado.");
         }

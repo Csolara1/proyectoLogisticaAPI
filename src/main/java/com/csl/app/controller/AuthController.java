@@ -46,10 +46,11 @@ public class AuthController {
 
         if (userOpt.isPresent()) {
             User user = userOpt.get();
-            
+
             // VERIFICACIÓN DE CUENTA ACTIVA
             if (!user.getIsActive()) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Tu cuenta no está activa. Por favor, revisa tu correo y confirma el registro.");
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body("Tu cuenta no está activa. Por favor, revisa tu correo y confirma el registro.");
             }
 
             if (passwordEncoder.matches(password, user.getUserPassword())) {
@@ -61,7 +62,7 @@ public class AuthController {
                 return ResponseEntity.ok(response);
             }
         }
-        
+
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Credenciales incorrectas");
     }
 
@@ -73,10 +74,10 @@ public class AuthController {
         }
 
         // 1. Configuración inicial (INACTIVO)
-        user.setIsActive(false); 
+        user.setIsActive(false);
         user.setRoleId(2); // Cliente
         user.setUserPassword(passwordEncoder.encode(user.getUserPassword()));
-        
+
         User newUser = userRepository.save(user);
 
         // 2. Generar Token y Enviar Correo
@@ -88,7 +89,8 @@ public class AuthController {
             return ResponseEntity.ok("Registro completado. Se ha enviado un correo de confirmación.");
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Usuario creado pero falló el envío del correo.");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Usuario creado pero falló el envío del correo.");
         }
     }
 
@@ -110,7 +112,7 @@ public class AuthController {
             registrationTokens.remove(token);
 
             // Redirigir al Login del Frontend (Ajusta el puerto 5500 si es necesario)
-            response.sendRedirect("http://127.0.0.1:5500/login.html?verified=true");
+            response.sendRedirect("https://www.controlsystemlogistic.com/login.html?verified=true");
         } else {
             response.sendError(HttpStatus.NOT_FOUND.value(), "Usuario no encontrado.");
         }
@@ -121,10 +123,12 @@ public class AuthController {
     public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> body) {
         String email = body.get("email");
 
-        if (email == null || email.isEmpty()) return ResponseEntity.badRequest().body("El email es obligatorio.");
+        if (email == null || email.isEmpty())
+            return ResponseEntity.badRequest().body("El email es obligatorio.");
 
         Optional<User> userOpt = userRepository.findByUserEmail(email);
-        if (userOpt.isEmpty()) return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Error: Usuario no encontrado.");
+        if (userOpt.isEmpty())
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Error: Usuario no encontrado.");
 
         String token = UUID.randomUUID().toString();
         passwordResetTokens.put(token, email);
@@ -133,7 +137,8 @@ public class AuthController {
             emailService.enviarCorreoRecuperacion(email, token);
             return ResponseEntity.ok("Correo enviado correctamente.");
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error envío correo: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error envío correo: " + e.getMessage());
         }
     }
 
@@ -143,10 +148,12 @@ public class AuthController {
         String token = body.get("token");
         String newPassword = body.get("newPassword");
 
-        if (token == null || newPassword == null) return ResponseEntity.badRequest().body("Faltan datos.");
+        if (token == null || newPassword == null)
+            return ResponseEntity.badRequest().body("Faltan datos.");
 
         String email = passwordResetTokens.get(token);
-        if (email == null) return ResponseEntity.badRequest().body("Token inválido.");
+        if (email == null)
+            return ResponseEntity.badRequest().body("Token inválido.");
 
         Optional<User> userOpt = userRepository.findByUserEmail(email);
         if (userOpt.isPresent()) {

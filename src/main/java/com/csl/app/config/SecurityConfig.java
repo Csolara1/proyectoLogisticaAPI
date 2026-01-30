@@ -24,6 +24,10 @@ import java.util.Arrays;
 public class SecurityConfig {
 
     private final CustomUserDetailsService userDetailsService;
+    
+    // Inyectamos el manejador de Google que acabamos de crear
+    @Autowired
+    private GoogleLoginSuccessHandler googleLoginSuccessHandler;
 
     @Autowired
     public SecurityConfig(CustomUserDetailsService userDetailsService) {
@@ -48,30 +52,38 @@ public class SecurityConfig {
         return authConfig.getAuthenticationManager();
     }
 
-    // --- AQUÍ ESTÁ EL CAMBIO CLAVE ---
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
-            .cors(cors -> cors.configurationSource(corsConfigurationSource())) // Mantenemos tu config de CORS
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .authorizeHttpRequests(auth -> auth
-                // COMENTAMOS ESTAS LÍNEAS TEMPORALMENTE PARA NO RESTRINGIR NADA
-                // .requestMatchers("/api/quotes/**").permitAll()
-                // .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                
-                // ACTIVAMOS ESTA LÍNEA MÁGICA: Permite TODO a CUALQUIERA
+                // Permitimos todo para que no bloquee tus endpoints actuales
                 .anyRequest().permitAll()
             )
-            .httpBasic(Customizer.withDefaults());
+            .httpBasic(Customizer.withDefaults())
+            
+            // --- AQUÍ ESTÁ LA MAGIA DE GOOGLE ---
+            .oauth2Login(oauth2 -> oauth2
+                .loginPage("/login.html") // Si algo falla, vuelve aquí
+                .successHandler(googleLoginSuccessHandler) // Usa nuestra clase para guardar en BD
+            );
 
         return http.build();
     }
 
-    // --- MANTENEMOS TU CONFIGURACIÓN CORS INTACTA ---
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5500", "http://127.0.0.1:5500"));
+        
+        // IMPORTANTE: He añadido tu dominio .com para que funcione en AWS
+        configuration.setAllowedOrigins(Arrays.asList(
+            "http://localhost:5500", 
+            "http://127.0.0.1:5500",
+            "http://controlsystemlogistic.com",
+            "http://www.controlsystemlogistic.com"
+        ));
+        
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
         configuration.setAllowCredentials(true);

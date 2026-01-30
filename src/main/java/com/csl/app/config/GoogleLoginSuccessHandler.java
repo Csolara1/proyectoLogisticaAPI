@@ -49,6 +49,6 @@ public class GoogleLoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         // --- CORRECCIÓN AQUÍ ---
         // Redirigimos explícitamente al puerto 5500 donde está tu Frontend
         getRedirectStrategy().sendRedirect(request, response,
-                "http://localhost:5500/login.html?google_auth=success&user_id=" + user.getUserId());
+                "http://controlsystemlogistic.com/login.html?google_auth=success&user_id=" + user.getUserId());
     }
 }

@@ -8,7 +8,7 @@ import java.time.LocalDate;
 @Data
 @NoArgsConstructor
 @Entity
-@Table(name = "orders") // Nombre de la tabla en Postgres
+@Table(name = "orders")
 public class Order {
 
     @Id
@@ -16,18 +16,23 @@ public class Order {
     private Long id;
 
     @Column(name = "order_code", unique = true)
-    private String orderCode; // Ej: "1001A"
+    private String orderCode;
 
     @Column(name = "client_name")
     private String clientName;
+
+    // --- NUEVO CAMPO: Vinculación con Usuario ---
+    @Column(name = "user_id")
+    private Long userId; 
+    // ---------------------------------------------
 
     private String origin;
     private String destination;
 
     @Column(name = "transport_mode")
-    private String transportMode; // Marítimo, Terrestre...
+    private String transportMode;
 
-    private String status; // En Tránsito, Entregado...
+    private String status;
 
     @Column(name = "creation_date")
     private LocalDate creationDate;

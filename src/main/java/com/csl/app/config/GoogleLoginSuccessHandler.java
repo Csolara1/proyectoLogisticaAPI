@@ -38,17 +38,15 @@ public class GoogleLoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
             user = new User();
             user.setUserEmail(email);
             user.setFullName(name);
-            user.setRoleId(2);
+            user.setRoleId(2); // Cliente
             user.setIsActive(true);
             user.setMobilePhone("");
             user.setUserPassword(UUID.randomUUID().toString());
-
             user = userRepository.save(user);
         }
 
-        // --- CORRECCIÓN AQUÍ ---
-        // Redirigimos explícitamente al puerto 5500 donde está tu Frontend
+        // CORRECCIÓN LOCALHOST: Redirigimos al puerto 5500 (Live Server)
         getRedirectStrategy().sendRedirect(request, response,
-                "http://controlsystemlogistic.com/login.html?google_auth=success&user_id=" + user.getUserId());
+                "http://localhost:5500/login.html?google_auth=success&user_id=" + user.getUserId());
     }
 }

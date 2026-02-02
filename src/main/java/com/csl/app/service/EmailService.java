@@ -11,72 +11,44 @@ public class EmailService {
     @Autowired
     private JavaMailSender mailSender;
 
-    // --- CORREO DE RECUPERACIÓN DE CONTRASEÑA ---
+    // --- RECUPERACIÓN DE CONTRASEÑA ---
     public void enviarCorreoRecuperacion(String destino, String token) {
         SimpleMailMessage message = new SimpleMailMessage();
-        
-        // Remitente (Debe coincidir con application.properties)
         message.setFrom("controlsystemlogistic@gmail.com");
         message.setTo(destino);
-        message.setSubject("Restablecer Contraseña - CSL Logistics");
+        message.setSubject("Recuperar Contraseña (LOCAL)");
         
-        // Enlace al Frontend (reset_password.html)
-        // Ajusta el puerto 5500 si usas otro en VS Code
-        String urlFrontend = "http://127.0.0.1:5500/reset_password.html?token=" + token;
+        // Apunta al Frontend Local
+        String urlFrontend = "http://localhost:5500/reset_password.html?token=" + token;
         
-        String cuerpo = "Hola,\n\n" +
-                "Has solicitado restablecer tu contraseña.\n" +
-                "Haz clic en el siguiente enlace para crear una nueva:\n\n" +
-                urlFrontend + "\n\n" +
-                "Si no has sido tú, ignora este mensaje.\n" +
-                "Atentamente,\nEquipo de CSL Logistics.";
+        String cuerpo = "Hola,\n\nPara restablecer tu contraseña en local, haz clic aquí:\n" + urlFrontend;
         
         message.setText(cuerpo);
         mailSender.send(message);
-        System.out.println("Correo recuperación enviado a: " + destino);
     }
 
-    // --- NUEVO: CORREO DE CONFIRMACIÓN DE REGISTRO ---
+    // --- CONFIRMACIÓN DE REGISTRO ---
     public void enviarCorreoRegistro(String destino, String token) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom("controlsystemlogistic@gmail.com");
         message.setTo(destino);
-        message.setSubject("¡Bienvenido a CSL! Confirma tu cuenta");
+        message.setSubject("Confirma tu cuenta (LOCAL)");
 
-        // El enlace apunta al BACKEND para activar la cuenta
+        // Apunta al Backend Local
         String urlConfirmacion = "http://localhost:8080/api/auth/confirm-account?token=" + token;
 
-        String cuerpo = "Hola,\n\n" +
-                "Gracias por registrarte en Control System Logistics.\n" +
-                "Para activar tu cuenta y poder entrar, confirma que eres tú haciendo clic aquí:\n\n" +
-                urlConfirmacion + "\n\n" +
-                "Si no has sido tú, simplemente ignora este correo.\n\n" +
-                "¡Nos vemos pronto!\n" +
-                "El equipo de CSL.";
+        String cuerpo = "Hola,\n\nConfirma tu registro en local haciendo clic aquí:\n" + urlConfirmacion;
 
         message.setText(cuerpo);
         mailSender.send(message);
-        System.out.println("Correo confirmación enviado a: " + destino);
     }
 
     public void enviarPresupuesto(String destino, String transporte, String peso, String precio) {
         SimpleMailMessage message = new SimpleMailMessage();
-        
         message.setFrom("controlsystemlogistic@gmail.com");
         message.setTo(destino);
-        message.setSubject("Presupuesto Oficial - CSL Logistics");
-        
-        String cuerpo = "Hola,\n\n" +
-                "Aquí tienes el detalle de tu presupuesto solicitado:\n\n" +
-                "📦 Transporte: " + transporte + "\n" +
-                "⚖️ Peso: " + peso + " kg\n" +
-                "💰 PRECIO ESTIMADO: " + precio + "\n\n" +
-                "Este presupuesto tiene una validez de 15 días.\n" +
-                "Para confirmar el envío, inicia sesión en tu cuenta y crea un nuevo pedido.\n\n" +
-                "Atentamente,\nEquipo Comercial de CSL.";
-        
-        message.setText(cuerpo);
+        message.setSubject("Presupuesto (LOCAL)");
+        message.setText("Presupuesto: " + precio + "\nEntra en http://localhost:5500 para verlo.");
         mailSender.send(message);
-        System.out.println("Presupuesto enviado a: " + destino);
     }
 }

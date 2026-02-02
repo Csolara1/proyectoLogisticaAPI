@@ -100,19 +100,19 @@ public class AuthController {
         String email = registrationTokens.get(token);
 
         if (email == null) {
-            response.sendError(HttpStatus.BAD_REQUEST.value(), "El enlace de confirmación es inválido o ha caducado.");
+            response.sendError(HttpStatus.BAD_REQUEST.value(), "Enlace inválido o caducado.");
             return;
         }
 
         Optional<User> userOpt = userRepository.findByUserEmail(email);
         if (userOpt.isPresent()) {
             User user = userOpt.get();
-            user.setIsActive(true); // ¡ACTIVAMOS AL USUARIO!
+            user.setIsActive(true);
             userRepository.save(user);
             registrationTokens.remove(token);
 
-            // Redirigir al Login del Frontend (Ajusta el puerto 5500 si es necesario)
-            response.sendRedirect("https://controlsystemlogistic.com/login.html?verified=true");
+            // CORRECCIÓN LOCALHOST
+            response.sendRedirect("http://localhost:5500/login.html?verified=true");
         } else {
             response.sendError(HttpStatus.NOT_FOUND.value(), "Usuario no encontrado.");
         }

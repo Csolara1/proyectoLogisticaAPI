@@ -8,6 +8,11 @@ import java.util.List;
 @Repository
 public interface QuoteRepository extends JpaRepository<Quote, Long> {
     
-    // Encuentra todas las cotizaciones que NO han sido procesadas
+    // CORREGIDO: Buscamos por ID (userId) en lugar de por objeto (user)
+    List<Quote> findByUserId(Long userId);
+    
+    // Para borrar en cascada
+    void deleteByUserId(Long userId);
+
     List<Quote> findByIsProcessedFalse();
 }

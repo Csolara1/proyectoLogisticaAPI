@@ -8,9 +8,9 @@ import java.util.List;
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
     
-    // Permite encontrar pedidos de un usuario específico
+    // Método para buscar pedidos de un solo usuario (Vista Cliente)
     List<Order> findByUserId(Long userId);
 
-    // Permite borrar todos los pedidos de un usuario (para el borrado en cascada)
+    // Método para borrar pedidos de un usuario (Borrado en cascada)
     void deleteByUserId(Long userId);
 }

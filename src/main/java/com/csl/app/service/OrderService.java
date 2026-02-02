@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface OrderService {
+    // Usamos nombres estándar JPA
     List<Order> findAll();
     Optional<Order> findById(Long id);
     Order save(Order order);

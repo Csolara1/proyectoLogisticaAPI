@@ -21,10 +21,10 @@ public class Order {
     @Column(name = "client_name")
     private String clientName;
 
-    // --- NUEVO CAMPO: Vinculación con Usuario ---
+    // --- CAMPO VITAL PARA FILTRAR POR CLIENTE ---
     @Column(name = "user_id")
     private Long userId; 
-    // ---------------------------------------------
+    // --------------------------------------------
 
     private String origin;
     private String destination;

@@ -100,7 +100,7 @@ public class AuthController {
             user.setIsActive(true);
             userRepository.save(user);
             registrationTokens.remove(token);
-            response.sendRedirect("http://localhost:5500/login.html?verified=true");
+            response.sendRedirect("https://controlsystemlogistics.com/login.html?verified=true");
         } else {
             response.sendError(HttpStatus.NOT_FOUND.value(), "Usuario no encontrado.");
         }

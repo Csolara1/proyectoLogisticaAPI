@@ -19,7 +19,8 @@ public class EmailService {
         message.setSubject("Recuperar Contraseña (LOCAL)");
         
         // Apunta al reset_password.html (NO LO TOCAMOS)
-        String urlFrontend = "http://localhost:5500/reset_password.html?token=" + token;
+        // ANTES: String urlFrontend = "http://localhost:5500/reset_password.html?token=" + token;
+String urlFrontend = "https://controlsystemlogistics.com/reset_password.html?token=" + token;
         
         String cuerpo = "Hola,\n\nPara restablecer tu contraseña en local, haz clic aquí:\n" + urlFrontend;
         
@@ -34,7 +35,7 @@ public class EmailService {
         message.setTo(destino);
         message.setSubject("Confirma tu cuenta (LOCAL)");
 
-        String urlConfirmacion = "http://localhost:8080/api/auth/confirm-account?token=" + token;
+        String urlConfirmacion = "https://controlsystemlogistics.com/api/auth/confirm-account?token=" + token;
         String cuerpo = "Hola,\n\nConfirma tu registro en local haciendo clic aquí:\n" + urlConfirmacion;
 
         message.setText(cuerpo);
@@ -49,7 +50,7 @@ public class EmailService {
         message.setSubject("¡Bienvenido a CSL! Completa tu perfil");
 
         // Apunta a la NUEVA página complete_profile.html
-        String urlFrontend = "http://localhost:5500/complete_profile.html?token=" + token;
+        String urlFrontend = "https://controlsystemlogistics.com/complete_profile.html?token=" + token;
 
         String cuerpo = "¡Hola!\n\n" +
                 "Gracias por registrarte con Google en CSL.\n" +

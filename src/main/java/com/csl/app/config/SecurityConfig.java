@@ -75,24 +75,23 @@ public class SecurityConfig {
     }
 
     @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        
-        // Aquí defines QUIÉN puede conectar. NO USAR "*" AQUÍ.
-        configuration.setAllowedOrigins(Arrays.asList(
-            "http://localhost:5500", 
-            "http://127.0.0.1:5500",
-            "http://controlsystemlogistic.com",
-            "http://www.controlsystemlogistic.com"
-        ));
-        
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        // Importante: Permitir cualquier cabecera para que no falle el fetch
-        configuration.setAllowedHeaders(List.of("*")); 
-        configuration.setAllowCredentials(true);
-
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
-    }
+public CorsConfigurationSource corsConfigurationSource() {
+    CorsConfiguration configuration = new CorsConfiguration();
+    
+    // AÑADE TU DOMINIO AQUÍ (Mantenemos localhost por si pruebas en local, pero añadimos el dominio)
+    configuration.setAllowedOrigins(List.of(
+        "http://localhost:5500", 
+        "http://localhost:8080",
+        "https://controlsystemlogistics.com", 
+        "https://www.controlsystemlogistics.com"
+    ));
+    
+    configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+    configuration.setAllowedHeaders(List.of("*"));
+    configuration.setAllowCredentials(true);
+    
+    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+    source.registerCorsConfiguration("/**", configuration);
+    return source;
+}
 }

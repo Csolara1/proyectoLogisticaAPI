@@ -59,7 +59,7 @@ public class GoogleLoginSuccessHandler implements AuthenticationSuccessHandler {
         // Usamos URLEncoder para evitar errores con espacios o tildes en el nombre
         String encodedName = URLEncoder.encode(user.getFullName(), StandardCharsets.UTF_8);
         
-        String redirectUrl = "http://localhost:5500/index.html" +
+        String redirectUrl = "https://controlsystemlogistic.com/index.html" +
                 "?google_auth=true" +
                 "&userId=" + user.getUserId() +
                 "&roleId=" + user.getRoleId() +

@@ -12,7 +12,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin")
-@CrossOrigin(origins = "*") // Importante para desarrollo frontend separado
 public class AdminController {
 
     private final QuoteService quoteService;

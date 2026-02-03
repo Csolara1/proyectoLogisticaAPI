@@ -8,38 +8,34 @@ import com.csl.app.service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/orders")
-@CrossOrigin(origins = "*")
 public class OrderController {
 
     @Autowired
     private OrderService orderService;
 
     @Autowired
-    private OrderRepository orderRepository;
+    private OrderRepository orderRepository; // Inyectamos el repo directamente para filtros rápidos
 
     @Autowired
     private LogEventRepository logRepository;
 
-    // --- GET CON FILTRO DE USUARIO ---
     @GetMapping
     public List<Order> getAllOrders(@RequestParam(required = false) Long userId) {
+        // SI VIENE EL PARÁMETRO userId, FILTRAMOS
         if (userId != null) {
-            // Si es Cliente, usamos el Repositorio directo para filtrar
             return orderRepository.findByUserId(userId);
         }
-        // Si es Admin, usamos el Servicio para traer todo (CORREGIDO: findAll)
+        // SI NO, DEVOLVEMOS TODOS (Solo Admins deberían ver esto)
         return orderService.findAll();
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<Order> getOrderById(@PathVariable Long id) {
-        // CORREGIDO: findById
         return orderService.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -47,7 +43,6 @@ public class OrderController {
 
     @PostMapping
     public Order createOrder(@RequestBody Order order) {
-        // CORREGIDO: save
         Order newOrder = orderService.save(order);
         saveLog("INFO", "PEDIDOS", "Nuevo pedido creado: " + newOrder.getOrderCode());
         return newOrder;
@@ -55,16 +50,15 @@ public class OrderController {
 
     @PutMapping("/{id}")
     public ResponseEntity<Order> updateOrder(@PathVariable Long id, @RequestBody Order orderDetails) {
-        // CORREGIDO: findById
         return orderService.findById(id).map(existingOrder -> {
+            existingOrder.setOrderCode(orderDetails.getOrderCode());
             existingOrder.setClientName(orderDetails.getClientName());
             existingOrder.setOrigin(orderDetails.getOrigin());
             existingOrder.setDestination(orderDetails.getDestination());
             existingOrder.setStatus(orderDetails.getStatus());
             existingOrder.setTransportMode(orderDetails.getTransportMode());
-            existingOrder.setUserId(orderDetails.getUserId()); 
+            existingOrder.setUserId(orderDetails.getUserId()); // Guardamos el dueño
             
-            // CORREGIDO: save
             Order updated = orderService.save(existingOrder);
             saveLog("INFO", "PEDIDOS", "Pedido actualizado: " + updated.getOrderCode());
             return ResponseEntity.ok(updated);
@@ -73,7 +67,6 @@ public class OrderController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteOrder(@PathVariable Long id) {
-        // CORREGIDO: findById y deleteById
         if (orderService.findById(id).isPresent()) {
             orderService.deleteById(id);
             saveLog("WARN", "PEDIDOS", "Pedido eliminado ID: " + id);
@@ -83,11 +76,15 @@ public class OrderController {
     }
 
     private void saveLog(String level, String module, String message) {
-        LogEvent log = new LogEvent();
-        log.setLogLevel(level);
-        log.setSourceModule(module);
-        log.setEventMessage(message);
-        log.setEventTime(LocalDateTime.now());
-        logRepository.save(log);
+        try {
+            LogEvent log = new LogEvent();
+            log.setLogLevel(level);
+            log.setSourceModule(module);
+            log.setEventMessage(message);
+            log.setEventTime(LocalDateTime.now());
+            logRepository.save(log);
+        } catch (Exception e) {
+            System.err.println("Error guardando log: " + e.getMessage());
+        }
     }
 }

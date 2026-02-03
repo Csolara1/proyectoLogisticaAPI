@@ -8,45 +8,64 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
-import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 import java.util.Optional;
-import java.util.UUID;
 
 @Component
-public class GoogleLoginSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
+public class GoogleLoginSuccessHandler implements AuthenticationSuccessHandler {
 
     @Autowired
     private UserRepository userRepository;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
-            Authentication authentication) throws IOException, ServletException {
+                                        Authentication authentication) throws IOException, ServletException {
 
-        OAuth2User googleUser = (OAuth2User) authentication.getPrincipal();
-        String email = googleUser.getAttribute("email");
-        String name = googleUser.getAttribute("name");
+        // 1. Obtener datos de Google
+        OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
+        String email = oAuth2User.getAttribute("email");
+        String name = oAuth2User.getAttribute("name");
+        // Si quieres la foto: String picture = oAuth2User.getAttribute("picture");
 
-        Optional<User> existingUser = userRepository.findByUserEmail(email);
+        // 2. Verificar si el usuario existe en tu BD
+        Optional<User> userOptional = userRepository.findByUserEmail(email);
         User user;
 
-        if (existingUser.isPresent()) {
-            user = existingUser.get();
+        if (userOptional.isPresent()) {
+            user = userOptional.get();
+            // Actualizamos el nombre por si lo cambió en Google
+            user.setFullName(name);
+            userRepository.save(user);
         } else {
+            // Usuario nuevo: Lo registramos automáticamente
             user = new User();
             user.setUserEmail(email);
             user.setFullName(name);
-            user.setRoleId(2); // Cliente
-            user.setIsActive(true);
-            user.setMobilePhone("");
-            user.setUserPassword(UUID.randomUUID().toString());
-            user = userRepository.save(user);
+            user.setRoleId(2); // Rol 2 = CLIENTE por defecto
+            user.setIsActive(true); // Google verifica el email, así que activamos directo
+            user.setCreatedAt(LocalDateTime.now());
+            // Contraseña vacía o aleatoria, ya que entra por Google
+            user.setUserPassword(""); 
+            userRepository.save(user);
         }
 
-        // CORRECCIÓN LOCALHOST: Redirigimos al puerto 5500 (Live Server)
-        getRedirectStrategy().sendRedirect(request, response,
-                "http://localhost:5500/login.html?google_auth=success&user_id=" + user.getUserId());
+        // 3. Redirigir al Frontend (Puerto 5500) con los datos en la URL
+        // Usamos URLEncoder para evitar errores con espacios o tildes en el nombre
+        String encodedName = URLEncoder.encode(user.getFullName(), StandardCharsets.UTF_8);
+        
+        String redirectUrl = "http://localhost:5500/index.html" +
+                "?google_auth=true" +
+                "&userId=" + user.getUserId() +
+                "&roleId=" + user.getRoleId() +
+                "&fullName=" + encodedName +
+                "&email=" + user.getUserEmail();
+
+        response.sendRedirect(redirectUrl);
     }
 }

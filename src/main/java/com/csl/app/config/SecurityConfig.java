@@ -13,11 +13,13 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.header.writers.StaticHeadersWriter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -25,7 +27,6 @@ public class SecurityConfig {
 
     private final CustomUserDetailsService userDetailsService;
     
-    // Inyectamos el manejador de Google que acabamos de crear
     @Autowired
     private GoogleLoginSuccessHandler googleLoginSuccessHandler;
 
@@ -57,16 +58,17 @@ public class SecurityConfig {
         http
             .csrf(csrf -> csrf.disable())
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            // Añadimos la cabecera COOP para que Google Login (popup) funcione bien
+            .headers(headers -> headers
+                .addHeaderWriter(new StaticHeadersWriter("Cross-Origin-Opener-Policy", "same-origin-allow-popups"))
+            )
             .authorizeHttpRequests(auth -> auth
-                // Permitimos todo para que no bloquee tus endpoints actuales
                 .anyRequest().permitAll()
             )
             .httpBasic(Customizer.withDefaults())
-            
-            // --- AQUÍ ESTÁ LA MAGIA DE GOOGLE ---
             .oauth2Login(oauth2 -> oauth2
-                .loginPage("/login.html") // Si algo falla, vuelve aquí
-                .successHandler(googleLoginSuccessHandler) // Usa nuestra clase para guardar en BD
+                .loginPage("/login.html")
+                .successHandler(googleLoginSuccessHandler)
             );
 
         return http.build();
@@ -76,7 +78,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         
-        // IMPORTANTE: He añadido tu dominio .com para que funcione en AWS
+        // Aquí defines QUIÉN puede conectar. NO USAR "*" AQUÍ.
         configuration.setAllowedOrigins(Arrays.asList(
             "http://localhost:5500", 
             "http://127.0.0.1:5500",
@@ -85,7 +87,8 @@ public class SecurityConfig {
         ));
         
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
+        // Importante: Permitir cualquier cabecera para que no falle el fetch
+        configuration.setAllowedHeaders(List.of("*")); 
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

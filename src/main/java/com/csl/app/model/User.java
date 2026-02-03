@@ -46,6 +46,14 @@ public class User implements UserDetails {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
+    // --- AUTOMATIZACIÓN DE FECHA ---
+    @PrePersist
+    protected void onCreate() {
+        if (this.createdAt == null) {
+            this.createdAt = LocalDateTime.now();
+        }
+    }
+
     // --- MÉTODOS DE SPRING SECURITY (UserDetails) ---
 
     @Override

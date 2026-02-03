@@ -1,12 +1,14 @@
 package com.csl.app.model;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.LocalDate;
 
 @Data
 @NoArgsConstructor
+@AllArgsConstructor
 @Entity
 @Table(name = "orders")
 public class Order {
@@ -16,15 +18,10 @@ public class Order {
     private Long id;
 
     @Column(name = "order_code", unique = true)
-    private String orderCode;
+    private String orderCode; // IMPORTANTE: camelCase para que coincida con JS
 
     @Column(name = "client_name")
     private String clientName;
-
-    // --- CAMPO VITAL PARA FILTRAR POR CLIENTE ---
-    @Column(name = "user_id")
-    private Long userId; 
-    // --------------------------------------------
 
     private String origin;
     private String destination;
@@ -36,4 +33,14 @@ public class Order {
 
     @Column(name = "creation_date")
     private LocalDate creationDate;
+
+    @Column(name = "user_id")
+    private Long userId;
+
+    @PrePersist
+    protected void onCreate() {
+        if (this.creationDate == null) {
+            this.creationDate = LocalDate.now();
+        }
+    }
 }

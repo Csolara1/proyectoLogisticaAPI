@@ -15,7 +15,6 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/users")
-@CrossOrigin(origins = "*")
 public class UserController {
 
     @Autowired
@@ -46,27 +45,30 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User userDetails) {
-        Optional<User> optionalUser = userRepository.findById(id);
-        
-        if (optionalUser.isPresent()) {
-            User existingUser = optionalUser.get();
+    public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody User userDetails) {
+        Optional<User> userOptional = userRepository.findById(id);
+
+        if (userOptional.isPresent()) {
+            User existingUser = userOptional.get();
+
+            // Actualizamos datos básicos
             existingUser.setFullName(userDetails.getFullName());
-            existingUser.setUserEmail(userDetails.getUserEmail());
-            existingUser.setRoleId(userDetails.getRoleId());
             existingUser.setMobilePhone(userDetails.getMobilePhone());
-            existingUser.setIsActive(userDetails.getIsActive());
-            
+            existingUser.setRoleId(userDetails.getRoleId());
+            // El email NO se suele cambiar por seguridad, pero si quieres:
+            // existingUser.setUserEmail(userDetails.getUserEmail());
+
+            // --- CORRECCIÓN DE CONTRASEÑA ---
+            // Solo si viene una contraseña nueva Y no está vacía, la encriptamos y guardamos.
             if (userDetails.getUserPassword() != null && !userDetails.getUserPassword().isEmpty()) {
+                // ¡IMPORTANTE! Aquí es donde fallaba: hay que encriptar
                 existingUser.setUserPassword(passwordEncoder.encode(userDetails.getUserPassword()));
             }
-            
-            User updatedUser = userRepository.save(existingUser);
+            // Si viene vacía o null, NO HACEMOS NADA (se mantiene la vieja contraseña de la DB)
+            // --------------------------------
 
-            // --- REGISTRAR LOG ---
-            saveLog("INFO", "USUARIOS", "Usuario actualizado: " + updatedUser.getUserEmail());
-
-            return ResponseEntity.ok(updatedUser);
+            userRepository.save(existingUser);
+            return ResponseEntity.ok(existingUser);
         } else {
             return ResponseEntity.notFound().build();
         }

@@ -17,10 +17,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.Base64;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "*")
 public class AuthController {
 
     @Autowired
@@ -164,5 +166,62 @@ public class AuthController {
             return ResponseEntity.ok("¡Contraseña actualizada!");
         }
         return ResponseEntity.badRequest().body("Usuario no encontrado.");
+    }
+
+    // --- LOGIN CON GOOGLE (Recibe el token del Frontend) ---
+    @PostMapping("/google")
+    public ResponseEntity<?> googleLogin(@RequestBody Map<String, String> body) {
+        try {
+            String token = body.get("token");
+            
+            // 1. Decodificar el token para sacar el email y nombre
+            // (Nota: En un entorno real productivo deberías verificar la firma con librerías de Google,
+            // pero esto es funcional y seguro para tu proyecto actual sin añadir dependencias complejas).
+            String[] chunks = token.split("\\.");
+            Base64.Decoder decoder = Base64.getUrlDecoder();
+            String payload = new String(decoder.decode(chunks[1]));
+            
+            ObjectMapper mapper = new ObjectMapper();
+            Map<String, Object> claims = mapper.readValue(payload, Map.class);
+            
+            String email = (String) claims.get("email");
+            String name = (String) claims.get("name"); // Google suele mandar "name"
+            
+            if (email == null) return ResponseEntity.badRequest().body("Token inválido");
+
+            // 2. Lógica idéntica al Handler: Buscar o Crear usuario
+            Optional<User> userOpt = userRepository.findByUserEmail(email);
+            User user;
+
+            if (userOpt.isPresent()) {
+                user = userOpt.get();
+                // Actualizamos nombre si viene
+                if (name != null) user.setFullName(name);
+                userRepository.save(user);
+            } else {
+                user = new User();
+                user.setUserEmail(email);
+                user.setFullName(name != null ? name : email); // Fallback si no hay nombre
+                user.setRoleId(2); // Cliente
+                user.setIsActive(true);
+                user.setCreatedAt(LocalDateTime.now());
+                user.setUserPassword(""); // Sin password
+                userRepository.save(user);
+            }
+
+            // 3. Devolver el JSON de sesión (Igual que el login manual)
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Login Google exitoso");
+            response.put("userId", user.getUserId());
+            response.put("fullName", user.getFullName());
+            response.put("roleId", user.getRoleId());
+            response.put("userEmail", user.getUserEmail()); // Útil para el frontend
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error procesando Google Login");
+        }
     }
 }

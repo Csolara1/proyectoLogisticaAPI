@@ -34,11 +34,11 @@ public class AuthController {
     @Autowired
     private EmailService emailService;
 
-    // Almacenes temporales de tokens
+    // Almacenes de tokens
     private static final Map<String, String> passwordResetTokens = new ConcurrentHashMap<>();
     private static final Map<String, String> registrationTokens = new ConcurrentHashMap<>();
 
-    // --- LOGIN (Bloquea usuarios no activados) ---
+    // --- LOGIN ---
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> credentials) {
         String email = credentials.get("userEmail");
@@ -48,13 +48,10 @@ public class AuthController {
 
         if (userOpt.isPresent()) {
             User user = userOpt.get();
-
-            // VERIFICACIÓN DE CUENTA ACTIVA
-            if (!user.getIsActive()) {
+            if (!Boolean.TRUE.equals(user.getIsActive())) { // Null-safe check
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                        .body("Tu cuenta no está activa. Por favor, revisa tu correo y confirma el registro.");
+                        .body("Tu cuenta no está activa. Revisa tu correo.");
             }
-
             if (passwordEncoder.matches(password, user.getUserPassword())) {
                 Map<String, Object> response = new HashMap<>();
                 response.put("message", "Login exitoso");
@@ -64,98 +61,81 @@ public class AuthController {
                 return ResponseEntity.ok(response);
             }
         }
-
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Credenciales incorrectas");
     }
 
-    // --- REGISTRO (Crea inactivo + Envía correo) ---
+    // --- REGISTRO MANUAL ---
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody User user) {
         if (userRepository.findByUserEmail(user.getUserEmail()).isPresent()) {
             return ResponseEntity.badRequest().body("Error: El email ya está registrado");
         }
-
-        // 1. Configuración inicial (INACTIVO)
         user.setIsActive(false);
-        user.setRoleId(2); // Cliente
+        user.setRoleId(2);
         user.setUserPassword(passwordEncoder.encode(user.getUserPassword()));
-
         User newUser = userRepository.save(user);
 
-        // 2. Generar Token y Enviar Correo
         String token = UUID.randomUUID().toString();
         registrationTokens.put(token, newUser.getUserEmail());
 
         try {
             emailService.enviarCorreoRegistro(newUser.getUserEmail(), token);
-            return ResponseEntity.ok("Registro completado. Se ha enviado un correo de confirmación.");
+            return ResponseEntity.ok("Registro completado. Revisa tu correo.");
         } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Usuario creado pero falló el envío del correo.");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Fallo envío correo.");
         }
     }
 
-    // --- CONFIRMAR CUENTA (Endpoint del enlace del correo) ---
+    // --- CONFIRMAR CUENTA MANUAL ---
     @GetMapping("/confirm-account")
     public void confirmAccount(@RequestParam("token") String token, HttpServletResponse response) throws IOException {
         String email = registrationTokens.get(token);
-
         if (email == null) {
-            response.sendError(HttpStatus.BAD_REQUEST.value(), "Enlace inválido o caducado.");
+            response.sendError(HttpStatus.BAD_REQUEST.value(), "Enlace inválido.");
             return;
         }
-
         Optional<User> userOpt = userRepository.findByUserEmail(email);
         if (userOpt.isPresent()) {
             User user = userOpt.get();
             user.setIsActive(true);
             userRepository.save(user);
             registrationTokens.remove(token);
-
-            // CORRECCIÓN LOCALHOST
             response.sendRedirect("http://localhost:5500/login.html?verified=true");
         } else {
             response.sendError(HttpStatus.NOT_FOUND.value(), "Usuario no encontrado.");
         }
     }
 
-    // --- SOLICITAR RECUPERACIÓN (Forgot Password) ---
+    // --- FORGOT PASSWORD ---
     @PostMapping("/forgot-password")
     public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> body) {
         String email = body.get("email");
-
-        if (email == null || email.isEmpty())
-            return ResponseEntity.badRequest().body("El email es obligatorio.");
+        if (email == null || email.isEmpty()) return ResponseEntity.badRequest().body("Email obligatorio.");
 
         Optional<User> userOpt = userRepository.findByUserEmail(email);
-        if (userOpt.isEmpty())
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Error: Usuario no encontrado.");
+        if (userOpt.isEmpty()) return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuario no encontrado.");
 
         String token = UUID.randomUUID().toString();
         passwordResetTokens.put(token, email);
 
         try {
             emailService.enviarCorreoRecuperacion(email, token);
-            return ResponseEntity.ok("Correo enviado correctamente.");
+            return ResponseEntity.ok("Correo enviado.");
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error envío correo: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error envío correo.");
         }
     }
 
-    // --- RESTABLECER CONTRASEÑA (Reset Password) ---
+    // --- RESET PASSWORD (INTACTO - Solo cambia contraseña) ---
     @PostMapping("/reset-password")
     public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> body) {
         String token = body.get("token");
         String newPassword = body.get("newPassword");
 
-        if (token == null || newPassword == null)
-            return ResponseEntity.badRequest().body("Faltan datos.");
-
+        if (token == null || newPassword == null) return ResponseEntity.badRequest().body("Faltan datos.");
+        
         String email = passwordResetTokens.get(token);
-        if (email == null)
-            return ResponseEntity.badRequest().body("Token inválido.");
+        if (email == null) return ResponseEntity.badRequest().body("Token inválido.");
 
         Optional<User> userOpt = userRepository.findByUserEmail(email);
         if (userOpt.isPresent()) {
@@ -168,60 +148,105 @@ public class AuthController {
         return ResponseEntity.badRequest().body("Usuario no encontrado.");
     }
 
-    // --- LOGIN CON GOOGLE (Recibe el token del Frontend) ---
+    // --- NUEVO ENDPOINT: COMPLETAR PERFIL (Solo para Google/Nuevos) ---
+    @PostMapping("/complete-profile")
+    public ResponseEntity<?> completeProfile(@RequestBody Map<String, String> body) {
+        String token = body.get("token");
+        String newPassword = body.get("newPassword");
+        String fullName = body.get("fullName");
+        String phone = body.get("mobilePhone");
+
+        if (token == null || newPassword == null)
+            return ResponseEntity.badRequest().body("Faltan datos obligatorios.");
+
+        String email = passwordResetTokens.get(token);
+        if (email == null) 
+            return ResponseEntity.badRequest().body("Token inválido o expirado.");
+
+        Optional<User> userOpt = userRepository.findByUserEmail(email);
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            
+            // Actualizamos datos
+            user.setUserPassword(passwordEncoder.encode(newPassword));
+            if (fullName != null && !fullName.isEmpty()) user.setFullName(fullName);
+            if (phone != null && !phone.isEmpty()) user.setMobilePhone(phone);
+            
+            // ¡ESTO ES LO IMPORTANTE! ACTIVAMOS LA CUENTA
+            user.setIsActive(true);
+            
+            userRepository.save(user);
+            passwordResetTokens.remove(token);
+            
+            return ResponseEntity.ok("¡Perfil completado y cuenta activada!");
+        }
+        return ResponseEntity.badRequest().body("Usuario no encontrado.");
+    }
+
+    // --- LOGIN CON GOOGLE (MODIFICADO) ---
     @PostMapping("/google")
     public ResponseEntity<?> googleLogin(@RequestBody Map<String, String> body) {
         try {
             String token = body.get("token");
             
-            // 1. Decodificar el token para sacar el email y nombre
-            // (Nota: En un entorno real productivo deberías verificar la firma con librerías de Google,
-            // pero esto es funcional y seguro para tu proyecto actual sin añadir dependencias complejas).
+            // Decodificar token (Simplificado)
             String[] chunks = token.split("\\.");
             Base64.Decoder decoder = Base64.getUrlDecoder();
             String payload = new String(decoder.decode(chunks[1]));
-            
             ObjectMapper mapper = new ObjectMapper();
             Map<String, Object> claims = mapper.readValue(payload, Map.class);
             
             String email = (String) claims.get("email");
-            String name = (String) claims.get("name"); // Google suele mandar "name"
+            String name = (String) claims.get("name");
             
             if (email == null) return ResponseEntity.badRequest().body("Token inválido");
 
-            // 2. Lógica idéntica al Handler: Buscar o Crear usuario
             Optional<User> userOpt = userRepository.findByUserEmail(email);
-            User user;
 
             if (userOpt.isPresent()) {
-                user = userOpt.get();
-                // Actualizamos nombre si viene
-                if (name != null) user.setFullName(name);
-                userRepository.save(user);
+                // CASO A: YA EXISTE -> Login Normal
+                User user = userOpt.get();
+                
+                if (!Boolean.TRUE.equals(user.getIsActive())) {
+                     return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Cuenta inactiva. Revisa tu correo.");
+                }
+
+                Map<String, Object> response = new HashMap<>();
+                response.put("message", "Login Google exitoso");
+                response.put("userId", user.getUserId());
+                response.put("fullName", user.getFullName());
+                response.put("roleId", user.getRoleId());
+                response.put("userEmail", user.getUserEmail());
+                return ResponseEntity.ok(response);
+
             } else {
-                user = new User();
-                user.setUserEmail(email);
-                user.setFullName(name != null ? name : email); // Fallback si no hay nombre
-                user.setRoleId(2); // Cliente
-                user.setIsActive(true);
-                user.setCreatedAt(LocalDateTime.now());
-                user.setUserPassword(""); // Sin password
-                userRepository.save(user);
+                // CASO B: NUEVO -> Crear Inactivo y Enviar Correo Configuración
+                User newUser = new User();
+                newUser.setUserEmail(email);
+                newUser.setFullName(name != null ? name : email);
+                newUser.setRoleId(2);
+                newUser.setIsActive(false); 
+                newUser.setCreatedAt(LocalDateTime.now());
+                newUser.setUserPassword(""); 
+                
+                userRepository.save(newUser);
+
+                // Generamos token para complete_profile
+                String setupToken = UUID.randomUUID().toString();
+                passwordResetTokens.put(setupToken, email);
+
+                // ENVIAMOS EL NUEVO CORREO (Ahora sí existe el método)
+                emailService.enviarCorreoConfiguracion(email, setupToken);
+
+                Map<String, Object> response = new HashMap<>();
+                response.put("status", "NEW_USER_EMAIL_SENT");
+                response.put("message", "Usuario registrado. Revisa tu correo.");
+                return ResponseEntity.ok(response);
             }
-
-            // 3. Devolver el JSON de sesión (Igual que el login manual)
-            Map<String, Object> response = new HashMap<>();
-            response.put("message", "Login Google exitoso");
-            response.put("userId", user.getUserId());
-            response.put("fullName", user.getFullName());
-            response.put("roleId", user.getRoleId());
-            response.put("userEmail", user.getUserEmail()); // Útil para el frontend
-
-            return ResponseEntity.ok(response);
 
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error procesando Google Login");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error Google Login");
         }
     }
 }

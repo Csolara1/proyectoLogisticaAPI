@@ -20,7 +20,7 @@ public class EmailService {
         
         // Apunta al reset_password.html (NO LO TOCAMOS)
         // ANTES: String urlFrontend = "http://localhost:5500/reset_password.html?token=" + token;
-String urlFrontend = "https://controlsystemlogistics.com/reset_password.html?token=" + token;
+String urlFrontend = "https://controlsystemlogistic.com/reset_password.html?token=" + token;
         
         String cuerpo = "Hola,\n\nPara restablecer tu contraseña en local, haz clic aquí:\n" + urlFrontend;
         
@@ -35,7 +35,7 @@ String urlFrontend = "https://controlsystemlogistics.com/reset_password.html?tok
         message.setTo(destino);
         message.setSubject("Confirma tu cuenta (LOCAL)");
 
-        String urlConfirmacion = "https://controlsystemlogistics.com/api/auth/confirm-account?token=" + token;
+        String urlConfirmacion = "https://controlsystemlogistic.com/api/auth/confirm-account?token=" + token;
         String cuerpo = "Hola,\n\nConfirma tu registro en local haciendo clic aquí:\n" + urlConfirmacion;
 
         message.setText(cuerpo);
@@ -50,7 +50,7 @@ String urlFrontend = "https://controlsystemlogistics.com/reset_password.html?tok
         message.setSubject("¡Bienvenido a CSL! Completa tu perfil");
 
         // Apunta a la NUEVA página complete_profile.html
-        String urlFrontend = "https://controlsystemlogistics.com/complete_profile.html?token=" + token;
+        String urlFrontend = "https://controlsystemlogistic.com/complete_profile.html?token=" + token;
 
         String cuerpo = "¡Hola!\n\n" +
                 "Gracias por registrarte con Google en CSL.\n" +
@@ -62,11 +62,12 @@ String urlFrontend = "https://controlsystemlogistics.com/reset_password.html?tok
     }
 
     public void enviarPresupuesto(String destino, String transporte, String peso, String precio) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom("controlsystemlogistic@gmail.com");
-        message.setTo(destino);
-        message.setSubject("Presupuesto (LOCAL)");
-        message.setText("Presupuesto: " + precio + "\nEntra en http://localhost:5500 para verlo.");
-        mailSender.send(message);
-    }
+    SimpleMailMessage message = new SimpleMailMessage();
+    message.setFrom("controlsystemlogistic@gmail.com");
+    message.setTo(destino);
+    message.setSubject("Tu Presupuesto - CSL"); // Queda mejor sin lo de "(LOCAL)"
+    // Cambiamos localhost por el dominio real
+    message.setText("El precio estimado es: " + precio + "\n\nEntra en https://controlsystemlogistic.com para gestionar tus pedidos.");
+    mailSender.send(message);
+}
 }

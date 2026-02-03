@@ -82,8 +82,8 @@ public CorsConfigurationSource corsConfigurationSource() {
     configuration.setAllowedOrigins(List.of(
         "http://localhost:5500", 
         "http://localhost:8080",
-        "https://controlsystemlogistics.com", 
-        "https://www.controlsystemlogistics.com"
+        "https://controlsystemlogistic.com", 
+        "https://www.controlsystemlogistic.com"
     ));
     
     configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
